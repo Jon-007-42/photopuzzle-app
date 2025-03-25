@@ -20,12 +20,14 @@ function App() {
   };
 
   if (!puzzleSettings) {
+    // Ingen billede endnu – vis upload-knap
     return <ImageUpload onImageSelected={handleImageSelected} />;
   }
 
   if (!hasStarted) {
+    // Vis fullscreen preview med baggrundsbillede
     return (
-      <div style={styles.preview(puzzleSettings.imageUrl)}>
+      <div style={styles.previewContainer(puzzleSettings.imageUrl)}>
         <button style={styles.startButton} onClick={() => setHasStarted(true)}>
           Start Puzzle
         </button>
@@ -33,6 +35,7 @@ function App() {
     );
   }
 
+  // Nu har brugeren klikket "Start Puzzle" – vis selve puzzlet
   return (
     <Puzzle
       imageUrl={puzzleSettings.imageUrl}
@@ -43,8 +46,10 @@ function App() {
   );
 }
 
+// Her bruger vi en funktion, der tager en URL og returnerer et style-objekt.
+// Baggrundsbilledet = det roterede canvas-billede fra ImageUpload.
 const styles = {
-  preview: (url) => ({
+  previewContainer: (url) => ({
     height: '100vh',
     width: '100vw',
     backgroundImage: `url(${url})`,
@@ -54,6 +59,7 @@ const styles = {
     display: 'flex',
     justifyContent: 'center',
     alignItems: 'flex-end',
+    backgroundColor: '#000',
   }),
   startButton: {
     marginBottom: '2rem',
