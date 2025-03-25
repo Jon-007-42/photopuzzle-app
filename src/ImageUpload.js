@@ -12,17 +12,20 @@ function ImageUpload({ onImageSelected }) {
         const image = new Image();
         image.onload = function () {
           EXIF.getData(image, function () {
-            const orientation = EXIF.getTag(this, 'Orientation');
+            const orientation = EXIF.getTag(this, 'Orientation') || 1;
 
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
 
+            let width = image.width;
+            let height = image.height;
+
             if (orientation > 4) {
-              canvas.width = image.height;
-              canvas.height = image.width;
+              canvas.width = height;
+              canvas.height = width;
             } else {
-              canvas.width = image.width;
-              canvas.height = image.height;
+              canvas.width = width;
+              canvas.height = height;
             }
 
             switch (orientation) {
@@ -38,7 +41,7 @@ function ImageUpload({ onImageSelected }) {
 
             ctx.drawImage(image, 0, 0);
             const fixedImageUrl = canvas.toDataURL('image/jpeg');
-            onImageSelected(fixedImageUrl);
+            onImageSelected(fixedImageUrl, canvas.width, canvas.height);
           });
         };
         image.src = event.target.result;

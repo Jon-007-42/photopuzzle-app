@@ -1,9 +1,6 @@
 import React, { useState } from 'react';
 
-const rows = 3;
-const cols = 3;
-
-function Puzzle({ imageUrl }) {
+function Puzzle({ imageUrl, rows = 3, cols = 3, aspectRatio = 1 }) {
   const shuffle = (array) => {
     const arrCopy = [...array];
     for (let i = arrCopy.length - 1; i > 0; i--) {
@@ -42,7 +39,12 @@ function Puzzle({ imageUrl }) {
   };
 
   return (
-    <div style={styles.puzzleContainer}>
+    <div
+      style={{
+        ...styles.puzzleContainer,
+        height: `calc(100vw / ${aspectRatio})`,
+      }}
+    >
       {pieces.map((pieceValue, index) => {
         const pieceRow = Math.floor(pieceValue / cols);
         const pieceCol = pieceValue % cols;
@@ -70,9 +72,8 @@ function Puzzle({ imageUrl }) {
 const styles = {
   puzzleContainer: {
     width: '100vw',
-    height: '100vw',
-    maxWidth: '100vh',
     maxHeight: '100vh',
+    maxWidth: '100%',
     margin: '0 auto',
     display: 'flex',
     flexWrap: 'wrap',
