@@ -14,6 +14,8 @@ function App() {
       rows: isPortrait ? 5 : 3,
       cols: isPortrait ? 3 : 5,
       aspectRatio: width / height,
+      canvasWidth: width,
+      canvasHeight: height,
     });
   };
 
@@ -23,12 +25,7 @@ function App() {
 
   if (!hasStarted) {
     return (
-      <div style={styles.previewContainer}>
-        <img
-          src={puzzleSettings.imageUrl}
-          alt="preview"
-          style={styles.previewImage}
-        />
+      <div style={styles.preview(puzzleSettings.imageUrl)}>
         <button style={styles.startButton} onClick={() => setHasStarted(true)}>
           Start Puzzle
         </button>
@@ -47,25 +44,19 @@ function App() {
 }
 
 const styles = {
-  previewContainer: {
-    height: '100svh',
-    width: '100svw',
-    backgroundColor: '#000',
+  preview: (url) => ({
+    height: '100vh',
+    width: '100vw',
+    backgroundImage: `url(${url})`,
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+    backgroundRepeat: 'no-repeat',
     display: 'flex',
-    flexDirection: 'column',
     justifyContent: 'center',
-    alignItems: 'center',
-    overflow: 'hidden',
-    position: 'relative',
-  },
-  previewImage: {
-    maxWidth: '100%',
-    maxHeight: '100%',
-    objectFit: 'contain',
-  },
+    alignItems: 'flex-end',
+  }),
   startButton: {
-    position: 'absolute',
-    bottom: '2rem',
+    marginBottom: '2rem',
     padding: '1rem 2rem',
     fontSize: '1.2rem',
     backgroundColor: '#fff',
