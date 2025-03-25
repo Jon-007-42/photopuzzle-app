@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 const rows = 3;
 const cols = 3;
 
-function Puzzle() {
+function Puzzle({ imageUrl }) {
   const shuffle = (array) => {
     const arrCopy = [...array];
     for (let i = arrCopy.length - 1; i > 0; i--) {
@@ -54,6 +54,8 @@ function Puzzle() {
             style={{
               ...styles.piece,
               width: `${100 / cols}%`,
+              backgroundImage: `url(${imageUrl})`,
+              backgroundSize: `${cols * 100}% ${rows * 100}%`,
               backgroundPosition: `${(pieceCol * 100) / (cols - 1)}% ${(pieceRow * 100) / (rows - 1)}%`,
             }}
           >
@@ -67,22 +69,25 @@ function Puzzle() {
 
 const styles = {
   puzzleContainer: {
-    width: '90vw',
-    height: '90vw',
-    maxWidth: '90vh',
-    maxHeight: '90vh',
+    width: '100vw',
+    height: '100vw',
+    maxWidth: '100vh',
+    maxHeight: '100vh',
     margin: '0 auto',
     display: 'flex',
     flexWrap: 'wrap',
-    border: '2px solid #ccc',
+    border: '2px solid #000',
     position: 'relative',
+    touchAction: 'none',
+    background: '#000',
   },
   piece: {
     aspectRatio: '1',
     boxSizing: 'border-box',
-    border: '1px solid #999',
-    backgroundImage: 'url("/sample.jpg")',
-    backgroundSize: `${cols * 100}% ${rows * 100}%`,
+    border: '1px solid #555',
+    backgroundRepeat: 'no-repeat',
+    backgroundPosition: 'center',
+    backgroundSize: 'cover',
     cursor: 'pointer',
     position: 'relative',
   },
