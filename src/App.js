@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 
+// Hovedkomponent
 function App() {
   const [step, setStep] = useState('start');
   const [imageSrc, setImageSrc] = useState(null);
   const [finalTime, setFinalTime] = useState(0);
   const fileInputRef = useRef(null);
 
-  // Håndter filvalg (kamera/filvælger)
+  // Brugeren vælger/tager et foto
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -18,7 +19,7 @@ function App() {
     reader.readAsDataURL(file);
   };
 
-  // Start: en hvid skærm med "Take photo"-knap
+  // Startskærm
   if (step === 'start') {
     return (
       <div style={styles.startContainer}>
@@ -28,7 +29,6 @@ function App() {
         >
           Take photo
         </button>
-
         <input
           ref={fileInputRef}
           type="file"
@@ -54,19 +54,22 @@ function App() {
     );
   }
 
-  // Done-skærm => Vis originalbillede i fuldskærm + tid + 2 knapper
+  // Slutskærm
   if (step === 'done') {
     return (
       <div style={styles.doneContainer}>
         <img src={imageSrc} alt="Puzzle" style={styles.doneImage} />
+        
+        {/* Tekst nede over knapperne, i lidt mindre font */}
         <div style={styles.textOverlay}>
           You used {finalTime} seconds!
         </div>
+
         <div style={styles.btnRow}>
-          <button style={styles.btn} onClick={() => window.location.reload()}>
+          <button style={styles.endBtn} onClick={() => window.location.reload()}>
             Take photo
           </button>
-          <button style={styles.btn} onClick={handleShare}>
+          <button style={styles.endBtn} onClick={handleShare}>
             Share puzzle
           </button>
         </div>
@@ -77,7 +80,7 @@ function App() {
   return null;
 }
 
-// Puzzle-komponent
+// Puzzle-komponent (3x3)
 function Puzzle({ imageUrl, onPuzzleComplete }) {
   const [pieces, setPieces] = useState([]);
   const [firstSelected, setFirstSelected] = useState(null);
@@ -89,19 +92,19 @@ function Puzzle({ imageUrl, onPuzzleComplete }) {
     const total = rows * cols;
     const arr = Array.from({ length: total }, (_, i) => i);
 
-    // Fisher-Yates shuffle
     shuffleArray(arr);
 
-    // Hvis puzzle ender ufatteligt i [0..8], shuffle igen
-    let attempts = 0;
-    while (arr.every((val, idx) => val === idx) && attempts < 10) {
+    // Undgå "perfekt" puzzle fra start
+    let tries = 0;
+    while (arr.every((val, idx) => val === idx) && tries < 10) {
       shuffleArray(arr);
-      attempts++;
+      tries++;
     }
 
     setPieces(arr);
   }, []);
 
+  // Klik på en brik
   const swapPieces = (index) => {
     if (firstSelected === null) {
       setFirstSelected(index);
@@ -126,7 +129,6 @@ function Puzzle({ imageUrl, onPuzzleComplete }) {
       {pieces.map((val, idx) => {
         const rows = 3;
         const cols = 3;
-        // Hvilken del af billedet
         const row = Math.floor(val / cols);
         const col = val % cols;
         return (
@@ -151,7 +153,7 @@ function Puzzle({ imageUrl, onPuzzleComplete }) {
   );
 }
 
-// Lidt hjælp
+// Fisher-Yates shuffle
 function shuffleArray(arr) {
   for (let i = arr.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -159,20 +161,19 @@ function shuffleArray(arr) {
   }
 }
 
-// Knappen "Share puzzle"
+// Share-knap => Web Share API
 function handleShare() {
   if (navigator.share) {
     navigator.share({
       title: 'Puzzle completed!',
-      text: 'I completed the puzzle!',
-      // url: 'https://your-site.com' // valgfrit
+      text: 'I just completed the puzzle!',
     });
   } else {
     alert('Sharing not supported in this browser.');
   }
 }
 
-// CSS-in-JS styles
+// Styles
 const styles = {
   // Startskærm
   startContainer: {
@@ -191,22 +192,23 @@ const styles = {
     padding: '1rem 2rem',
     borderRadius: 8,
     transition: 'background-color 0.2s, color 0.2s',
+    cursor: 'pointer',
   },
 
-  // Puzzle-skærm => grid layout
+  // Puzzle-skærm
   puzzleContainer: {
     display: 'grid',
     gridTemplateColumns: 'repeat(3, 1fr)',
     gridTemplateRows: 'repeat(3, 1fr)',
-    gap: '3px', // synlig afstand mellem brikker
+    gap: '3px',
     width: '100vw',
     height: '100vh',
     background: '#000',
   },
   piece: {
     backgroundRepeat: 'no-repeat',
-    backgroundColor: '#222',    // hvis billedet ikke fylder alt
-    border: '2px solid #ccc',   // lys kant => tydelige brikker
+    backgroundColor: '#222',
+    border: '2px solid #ccc',
     position: 'relative',
     cursor: 'pointer',
   },
@@ -230,10 +232,11 @@ const styles = {
   },
   textOverlay: {
     position: 'absolute',
-    top: '2rem',
+    // Flyt teksten ned over knapperne
+    bottom: '5rem',
     width: '100%',
     textAlign: 'center',
-    fontSize: '1.8rem',
+    fontSize: '1.5rem', // 15% mindre end 1.8 ~ 1.53
     color: '#fff',
     textShadow: '1px 1px 2px #000',
   },
@@ -245,14 +248,15 @@ const styles = {
     justifyContent: 'center',
     gap: '1rem',
   },
-  btn: {
+  endBtn: {
     backgroundColor: 'transparent',
-    border: '2px solid #ccc',
-    padding: '0.8rem 1.5rem',
-    color: '#fff',
+    border: '2px solid lightblue',
+    color: 'lightblue',
     fontSize: '1rem',
-    borderRadius: '8px',
+    padding: '0.8rem 1.5rem',
+    borderRadius: 8,
     transition: 'background-color 0.2s, color 0.2s',
+    cursor: 'pointer',
   },
 };
 
