@@ -1,75 +1,77 @@
 import React, { useState } from 'react';
-import ImageUpload from './ImageUpload';
-import CropView from './CropView';
 import Puzzle from './Puzzle';
 
 function App() {
-  const [step, setStep] = useState('upload'); // 'upload' -> 'crop' -> 'preview' -> 'puzzle'
-  const [imageData, setImageData] = useState(null);
-  const [cropData, setCropData] = useState(null);
+  const [imageSrc, setImageSrc] = useState(null);
+  const [error, setError] = useState('');
 
-  // 1) Efter EXIF-rotation
-  const handleImageSelected = (url, w, h) => {
-    setImageData({ url, w, h });
-    setStep('crop');
+  const handleFileChange = (e) => {
+    setError('');
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Læs billedet som DataURL
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      const img = new Image();
+      img.onload = () => {
+        // Tjek om billedet er vertical/portrait
+        if (img.width >= img.height) {
+          setError('Billedet er ikke lodret. Prøv venligst igen med et vertikalt billede.');
+        } else {
+          setImageSrc(evt.target.result);
+        }
+      };
+      img.src = evt.target.result;
+    };
+    reader.readAsDataURL(file);
   };
 
-  // 2) Efter rotation + beskæring
-  const handleCropDone = (croppedUrl, cw, ch) => {
-    setCropData({ url: croppedUrl, w: cw, h: ch });
-    setStep('preview');
-  };
-
-  if (step === 'upload') {
-    return <ImageUpload onImageSelected={handleImageSelected} />;
-  }
-  if (step === 'crop') {
-    return <CropView imageUrl={imageData.url} onComplete={handleCropDone} />;
-  }
-  if (step === 'preview') {
+  // Hvis vi har et "fejl"-flag
+  if (error) {
     return (
-      <div style={styles.preview(cropData.url)}>
-        <button
-          onClick={() => setStep('puzzle')}
-          style={styles.startBtn}
-        >
-          Start Puzzle
+      <div style={styles.center}>
+        <p style={{ color: 'red' }}>{error}</p>
+        <button onClick={() => window.location.reload()}>
+          Vælg nyt billede
         </button>
       </div>
     );
   }
-  if (step === 'puzzle') {
+
+  // Ingen billede valgt endnu => vis upload-knap
+  if (!imageSrc) {
     return (
-      <Puzzle
-        imageUrl={cropData.url}
-        rows={3}
-        cols={3}
-      />
+      <div style={styles.center}>
+        <input
+          type="file"
+          accept="image/*"
+          capture="environment"
+          onChange={handleFileChange}
+          style={styles.fileInput}
+        />
+        <p>Vælg/tjek et lodret billede</p>
+      </div>
     );
   }
-  return null;
+
+  // Har billede => vis puzzle
+  return <Puzzle imageUrl={imageSrc} rows={3} cols={3} />;
 }
 
 const styles = {
-  preview: (url) => ({
+  center: {
     width: '100vw',
     height: '100vh',
-    backgroundImage: `url(${url})`,
-    backgroundSize: 'cover',
-    backgroundPosition: 'center',
+    background: '#222',
+    color: '#fff',
     display: 'flex',
-    alignItems: 'flex-end',
+    flexDirection: 'column',
+    alignItems: 'center',
     justifyContent: 'center',
-  }),
-  startBtn: {
-    marginBottom: '2rem',
-    padding: '1rem 2rem',
-    background: '#fff',
-    color: '#000',
-    fontSize: '1.2rem',
-    border: 'none',
-    borderRadius: '8px',
-    cursor: 'pointer',
+  },
+  fileInput: {
+    marginBottom: '1rem',
   },
 };
 

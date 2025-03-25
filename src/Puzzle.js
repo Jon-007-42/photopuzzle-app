@@ -4,10 +4,12 @@ function Puzzle({ imageUrl, rows = 3, cols = 3 }) {
   const [pieces, setPieces] = useState([]);
   const [firstSelected, setFirstSelected] = useState(null);
 
-  // Opret en random shuffle
+  // Shuffle stykker ved start:
   useEffect(() => {
     const total = rows * cols;
     const arr = Array.from({ length: total }, (_, i) => i);
+
+    // Fisher-Yates shuffle
     for (let i = arr.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [arr[i], arr[j]] = [arr[j], arr[i]];
@@ -25,7 +27,7 @@ function Puzzle({ imageUrl, rows = 3, cols = 3 }) {
       setPieces(newPieces);
       setFirstSelected(null);
 
-      // Check puzzle solved
+      // Tjek om puzzle er løst
       if (newPieces.every((val, idx) => val === idx)) {
         alert('Tillykke! Du har samlet puzzlet!');
       }
@@ -35,7 +37,7 @@ function Puzzle({ imageUrl, rows = 3, cols = 3 }) {
   return (
     <div style={styles.container}>
       {pieces.map((val, idx) => {
-        // find "rigtig" række/kol
+        // "val" fortæller, hvilken del af billedet vi skal vise
         const row = Math.floor(val / cols);
         const col = val % cols;
 
@@ -77,9 +79,9 @@ const styles = {
     aspectRatio: '1',
     boxSizing: 'border-box',
     border: '1px solid #555',
-    position: 'relative',
-    backgroundRepeat: 'no-repeat',
     cursor: 'pointer',
+    backgroundRepeat: 'no-repeat',
+    position: 'relative',
   },
   highlight: {
     position: 'absolute',
