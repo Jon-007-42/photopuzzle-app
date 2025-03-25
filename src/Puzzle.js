@@ -1,6 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 
 function Puzzle({ imageUrl, rows = 3, cols = 3, aspectRatio = 1 }) {
+  const [pieces, setPieces] = useState([]);
+  const [firstSelectedIndex, setFirstSelectedIndex] = useState(null);
+  const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
+
+  // Shuffle funktion
   const shuffle = (array) => {
     const arrCopy = [...array];
     for (let i = arrCopy.length - 1; i > 0; i--) {
@@ -10,17 +15,43 @@ function Puzzle({ imageUrl, rows = 3, cols = 3, aspectRatio = 1 }) {
     return arrCopy;
   };
 
-  const generateInitialPieces = () => {
-    const array = Array.from({ length: rows * cols }, (_, i) => i);
-    return shuffle(array);
-  };
+  // Initialisér brikker
+  useEffect(() => {
+    const total = rows * cols;
+    const ordered = Array.from({ length: total }, (_, i) => i);
+    setPieces(shuffle(ordered));
+  }, [rows, cols]);
 
-  const [pieces, setPieces] = useState(generateInitialPieces);
-  const [firstSelectedIndex, setFirstSelectedIndex] = useState(null);
+  // Lyt til skærmstørrelse og tilpas containeren
+  useEffect(() => {
+    const updateSize = () => {
+      const screenWidth = window.innerWidth;
+      const screenHeight = window.innerHeight;
+      const screenRatio = screenWidth / screenHeight;
 
-  const isPuzzleSolved = (arr) => {
-    return arr.every((val, index) => val === index);
-  };
+      let width, height;
+
+      if (screenRatio > aspectRatio) {
+        // Skærmen er bredere end billedet
+        height = screenHeight;
+        width = height * aspectRatio;
+      } else {
+        // Skærmen er højere end billedet
+        width = screenWidth;
+        height = width / aspectRatio;
+      }
+
+      setContainerSize({ width, height });
+    };
+
+    updateSize();
+    window.addEventListener('resize', updateSize);
+    return () => window.removeEventListener('resize', updateSize);
+  }, [aspectRatio]);
+
+  const isPuzzleSolved = useMemo(() => {
+    return pieces.every((val, index) => val === index);
+  }, [pieces]);
 
   const handlePieceClick = (clickedIndex) => {
     if (firstSelectedIndex === null) {
@@ -32,7 +63,7 @@ function Puzzle({ imageUrl, rows = 3, cols = 3, aspectRatio = 1 }) {
       setPieces(newPieces);
       setFirstSelectedIndex(null);
 
-      if (isPuzzleSolved(newPieces)) {
+      if (newPieces.every((val, index) => val === index)) {
         alert('Tillykke! Du har samlet puzzlet!');
       }
     }
@@ -42,7 +73,8 @@ function Puzzle({ imageUrl, rows = 3, cols = 3, aspectRatio = 1 }) {
     <div
       style={{
         ...styles.puzzleContainer,
-        height: `calc(100vw / ${aspectRatio})`,
+        width: containerSize.width,
+        height: containerSize.height,
       }}
     >
       {pieces.map((pieceValue, index) => {
@@ -71,16 +103,14 @@ function Puzzle({ imageUrl, rows = 3, cols = 3, aspectRatio = 1 }) {
 
 const styles = {
   puzzleContainer: {
-    width: '100vw',
-    maxHeight: '100vh',
-    maxWidth: '100%',
-    margin: '0 auto',
     display: 'flex',
     flexWrap: 'wrap',
+    margin: '0 auto',
     border: '2px solid #000',
     position: 'relative',
-    touchAction: 'none',
     background: '#000',
+    touchAction: 'none',
+    overflow: 'hidden',
   },
   piece: {
     aspectRatio: '1',
