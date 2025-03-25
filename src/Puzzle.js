@@ -2,12 +2,12 @@ import React, { useState, useEffect } from 'react';
 
 function Puzzle({ imageUrl, rows = 3, cols = 3 }) {
   const [pieces, setPieces] = useState([]);
-  const [firstSelectedIndex, setFirstSelectedIndex] = useState(null);
+  const [firstSelected, setFirstSelected] = useState(null);
 
+  // Opret en random shuffle
   useEffect(() => {
     const total = rows * cols;
     const arr = Array.from({ length: total }, (_, i) => i);
-    // Shuffle
     for (let i = arr.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [arr[i], arr[j]] = [arr[j], arr[i]];
@@ -15,17 +15,17 @@ function Puzzle({ imageUrl, rows = 3, cols = 3 }) {
     setPieces(arr);
   }, [rows, cols]);
 
-  const handlePieceClick = (index) => {
-    if (firstSelectedIndex === null) {
-      setFirstSelectedIndex(index);
+  const handleClick = (index) => {
+    if (firstSelected === null) {
+      setFirstSelected(index);
     } else {
       const newPieces = [...pieces];
-      [newPieces[firstSelectedIndex], newPieces[index]] =
-        [newPieces[index], newPieces[firstSelectedIndex]];
+      [newPieces[firstSelected], newPieces[index]] =
+        [newPieces[index], newPieces[firstSelected]];
       setPieces(newPieces);
-      setFirstSelectedIndex(null);
+      setFirstSelected(null);
 
-      // Check solved
+      // Check puzzle solved
       if (newPieces.every((val, idx) => val === idx)) {
         alert('Tillykke! Du har samlet puzzlet!');
       }
@@ -34,29 +34,27 @@ function Puzzle({ imageUrl, rows = 3, cols = 3 }) {
 
   return (
     <div style={styles.container}>
-      {pieces.map((pieceValue, index) => {
-        const pieceRow = Math.floor(pieceValue / cols);
-        const pieceCol = pieceValue % cols;
-
-        // Laver en "dynamisk" position
-        const posX = (pieceCol / (cols - 1)) * 100; 
-        const posY = (pieceRow / (rows - 1)) * 100;
+      {pieces.map((val, idx) => {
+        // find "rigtig" række/kol
+        const row = Math.floor(val / cols);
+        const col = val % cols;
 
         return (
           <div
-            key={index}
+            key={idx}
+            onClick={() => handleClick(idx)}
             style={{
               ...styles.piece,
               width: `${100 / cols}%`,
               backgroundImage: `url(${imageUrl})`,
-              backgroundSize: 'cover',       // <-- "cover"
-              backgroundPosition: 'center',  // <-- center (vi bruger posX/posY i original puzzle, men "cover" overrides det delvist)
+              backgroundSize: `${cols * 100}% ${rows * 100}%`,
+              backgroundPosition: `
+                ${(col * 100) / (cols - 1)}%
+                ${(row * 100) / (rows - 1)}%
+              `,
             }}
-            onClick={() => handlePieceClick(index)}
           >
-            {index === firstSelectedIndex && (
-              <div style={styles.highlight} />
-            )}
+            {idx === firstSelected && <div style={styles.highlight} />}
           </div>
         );
       })}
@@ -66,29 +64,26 @@ function Puzzle({ imageUrl, rows = 3, cols = 3 }) {
 
 const styles = {
   container: {
-    height: '100vh',
     width: '100vw',
+    height: '100vh',
     display: 'flex',
     flexWrap: 'wrap',
     margin: 0,
     border: '2px solid #000',
     background: '#000',
-    position: 'relative'
+    position: 'relative',
   },
   piece: {
     aspectRatio: '1',
     boxSizing: 'border-box',
     border: '1px solid #555',
-    cursor: 'pointer',
     position: 'relative',
     backgroundRepeat: 'no-repeat',
+    cursor: 'pointer',
   },
   highlight: {
     position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+    top: 0, left: 0, right: 0, bottom: 0,
     border: '3px solid red',
   },
 };
