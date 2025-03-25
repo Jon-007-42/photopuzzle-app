@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 
-// Puzzle-komponent
-function Puzzle({ imageUrl, rows = 3, cols = 3, onPuzzleComplete }) {
+// Puzzle-komponent (3x3)
+function Puzzle({ imageUrl, onPuzzleComplete }) {
   const [pieces, setPieces] = useState([]);
   const [firstSelected, setFirstSelected] = useState(null);
 
@@ -9,29 +9,33 @@ function Puzzle({ imageUrl, rows = 3, cols = 3, onPuzzleComplete }) {
   const [time, setTime] = useState(0);
   const [timerActive, setTimerActive] = useState(false);
 
+  // Bland brikker ved mount
   useEffect(() => {
-    // Bland brikker ved load
+    const rows = 3;
+    const cols = 3;
     const total = rows * cols;
     const arr = Array.from({ length: total }, (_, i) => i);
 
+    // Fisher-Yates shuffle
     for (let i = arr.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [arr[i], arr[j]] = [arr[j], arr[i]];
     }
     setPieces(arr);
 
-    // Start timer
+    // Start tidtagning
     setTime(0);
     setTimerActive(true);
-  }, [rows, cols]);
+  }, []);
 
-  // Opdater timer
+  // Opdater tid
   useEffect(() => {
     if (!timerActive) return;
-    const interval = setInterval(() => setTime((prev) => prev + 1), 1000);
+    const interval = setInterval(() => setTime((t) => t + 1), 1000);
     return () => clearInterval(interval);
   }, [timerActive]);
 
+  // Klik på en brik
   const swapPieces = (index) => {
     if (!timerActive) return;
     if (firstSelected === null) {
@@ -46,17 +50,19 @@ function Puzzle({ imageUrl, rows = 3, cols = 3, onPuzzleComplete }) {
       // Tjek om puzzle er løst
       if (newPieces.every((val, idx) => val === idx)) {
         setTimerActive(false);
-        onPuzzleComplete && onPuzzleComplete(time + 1); // +1 for at tælle det sidste sekund
+        onPuzzleComplete(time + 1); // +1 for at tælle sidste sekund
       }
     }
   };
 
+  // Billedet slices i 3x3
+  const rows = 3;
+  const cols = 3;
   return (
     <div style={styles.puzzleContainer}>
       {pieces.map((val, idx) => {
         const row = Math.floor(val / cols);
         const col = val % cols;
-
         return (
           <div
             key={idx}
@@ -76,23 +82,20 @@ function Puzzle({ imageUrl, rows = 3, cols = 3, onPuzzleComplete }) {
           </div>
         );
       })}
+      {/* Timer vises evt. øverst til venstre */}
+      <div style={styles.timer}>Time: {time}s</div>
     </div>
   );
 }
 
-// App-komponent: Kamera ? Puzzle ? Done
+// Hoved-App
 function App() {
-  const [step, setStep] = useState('camera');
+  // step: 'start' -> 'puzzle' -> 'done'
+  const [step, setStep] = useState('start');
   const [imageSrc, setImageSrc] = useState(null);
   const [finalTime, setFinalTime] = useState(0);
-  const fileInputRef = useRef(null);
 
-  // Forsøg at åbne kamera ved load
-  useEffect(() => {
-    if (step === 'camera' && fileInputRef.current) {
-      fileInputRef.current.click(); // Kan blive blokeret af nogle browsere
-    }
-  }, [step]);
+  const fileInputRef = useRef(null);
 
   // Håndter filvalg
   const handleFileChange = (e) => {
@@ -112,35 +115,32 @@ function App() {
     setStep('done');
   };
 
-  // Share-løsning med Web Share API (hvis browseren understøtter det)
-  const handleShare = () => {
-    if (navigator.share) {
-      navigator.share({
-        title: 'Puzzle completed!',
-        text: `I completed the puzzle in ${finalTime} seconds!`,
-        // Du kan evt. tilføje url: 'https://myPuzzle.com' hvis du har en side
-      });
-    } else {
-      alert('Sharing is not supported in this browser.');
-    }
-  };
-
-  // Step: "camera" ? ingen skærm, vi viser blot en skjult input
-  if (step === 'camera') {
+  // Step: "start" -> vis stor "START"-knap
+  if (step === 'start') {
     return (
-      <div style={styles.hidden}>
+      <div style={styles.center}>
+        <h1 style={styles.title}>Puzzle Game</h1>
+        <button
+          style={styles.startBtn}
+          onClick={() => {
+            fileInputRef.current.click(); // Bruger-aktivation for at åbne kamera
+          }}
+        >
+          Take Photo
+        </button>
         <input
           ref={fileInputRef}
           type="file"
           accept="image/*"
           capture="environment"
+          style={{ display: 'none' }}
           onChange={handleFileChange}
         />
       </div>
     );
   }
 
-  // Step: puzzle
+  // Step: "puzzle" -> Puzzle
   if (step === 'puzzle') {
     return (
       <Puzzle
@@ -150,23 +150,17 @@ function App() {
     );
   }
 
-  // Step: done ? vis billede i fuldskærm, tekst, 2 knapper
+  // Step: "done" -> Vis originalbillede i fuld skærm + tid
   if (step === 'done') {
     return (
       <div style={styles.doneContainer}>
-        {/* Baggrundsbillede i fuld skærm */}
         <img src={imageSrc} alt="Puzzle" style={styles.doneImage} />
-        {/* Overlay-tekst */}
         <div style={styles.textOverlay}>
-          Congratulations! You used {finalTime} seconds!
+          Tillykke! You used {finalTime} seconds!
         </div>
-        {/* Knapper */}
         <div style={styles.btnRow}>
           <button style={styles.btn} onClick={() => window.location.reload()}>
             Take new photo
-          </button>
-          <button style={styles.btn} onClick={handleShare}>
-            Share puzzle
           </button>
         </div>
       </div>
@@ -176,10 +170,29 @@ function App() {
   return null;
 }
 
-// Simple styles
+// Styles
 const styles = {
-  hidden: {
-    display: 'none',
+  center: {
+    width: '100vw',
+    height: '100vh',
+    background: '#123',
+    color: '#fff',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  title: {
+    fontSize: '2rem',
+    marginBottom: '1rem',
+  },
+  startBtn: {
+    padding: '1rem 2rem',
+    fontSize: '1.2rem',
+    background: '#0c0',
+    border: 'none',
+    borderRadius: '8px',
+    cursor: 'pointer',
   },
   puzzleContainer: {
     width: '100vw',
@@ -195,11 +208,20 @@ const styles = {
     border: '1px solid #555',
     backgroundRepeat: 'no-repeat',
     position: 'relative',
+    cursor: 'pointer',
   },
   highlight: {
     position: 'absolute',
     top: 0, left: 0, right: 0, bottom: 0,
     border: '3px solid red',
+  },
+  timer: {
+    position: 'absolute',
+    top: 10,
+    left: 10,
+    color: '#fff',
+    fontSize: '1.2rem',
+    textShadow: '1px 1px 2px #000',
   },
   doneContainer: {
     position: 'relative',
@@ -207,6 +229,9 @@ const styles = {
     height: '100vh',
     overflow: 'hidden',
     background: '#000',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   doneImage: {
     objectFit: 'cover',
@@ -216,12 +241,10 @@ const styles = {
   textOverlay: {
     position: 'absolute',
     top: 20,
-    left: 0,
-    right: 0,
+    width: '100%',
     textAlign: 'center',
     color: '#fff',
     fontSize: '1.5rem',
-    fontWeight: 'bold',
     textShadow: '1px 1px 2px #000',
   },
   btnRow: {
@@ -230,7 +253,6 @@ const styles = {
     width: '100%',
     display: 'flex',
     justifyContent: 'center',
-    gap: '1rem',
   },
   btn: {
     padding: '0.8rem 1.2rem',
