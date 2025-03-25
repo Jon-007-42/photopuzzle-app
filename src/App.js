@@ -1,31 +1,152 @@
+// src/App.js
 import React, { useState, useEffect, useRef } from 'react';
+import { supabase } from './supabaseClient';
 
-// Hovedkomponent
+function Puzzle({ imageUrl, onPuzzleComplete }) {
+  const [pieces, setPieces] = useState([]);
+  const [firstSelected, setFirstSelected] = useState(null);
+  const [startTime] = useState(() => Date.now());
+
+  useEffect(() => {
+    const rows = 3;
+    const cols = 3;
+    const total = rows * cols;
+    const arr = Array.from({ length: total }, (_, i) => i);
+
+    // Fisher-Yates shuffle
+    shuffleArray(arr);
+
+    // Undgå at puzzle starter 100% løst
+    let tries = 0;
+    while (arr.every((val, idx) => val === idx) && tries < 10) {
+      shuffleArray(arr);
+      tries++;
+    }
+
+    setPieces(arr);
+  }, []);
+
+  const handleClickPiece = (index) => {
+    if (firstSelected === null) {
+      setFirstSelected(index);
+    } else {
+      const newPieces = [...pieces];
+      [newPieces[firstSelected], newPieces[index]] =
+        [newPieces[index], newPieces[firstSelected]];
+      setPieces(newPieces);
+      setFirstSelected(null);
+
+      // Tjek om puzzle er løst
+      if (newPieces.every((val, idx) => val === idx)) {
+        const endTime = Date.now();
+        const timeUsed = Math.round((endTime - startTime) / 1000);
+        onPuzzleComplete(timeUsed);
+      }
+    }
+  };
+
+  return (
+    <div style={styles.puzzleContainer}>
+      {pieces.map((val, idx) => {
+        const rows = 3;
+        const cols = 3;
+        const row = Math.floor(val / cols);
+        const col = val % cols;
+
+        return (
+          <div
+            key={idx}
+            onClick={() => handleClickPiece(idx)}
+            style={{
+              ...styles.piece,
+              backgroundImage: `url(${imageUrl})`,
+              backgroundSize: `${cols * 100}% ${rows * 100}%`,
+              backgroundPosition: `
+                ${(col * 100) / (cols - 1)}%
+                ${(row * 100) / (rows - 1)}%
+              `,
+            }}
+          >
+            {idx === firstSelected && <div style={styles.highlight} />}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function App() {
-  const [step, setStep] = useState('start');
+  const [step, setStep] = useState('start');  // start -> puzzle -> done
+  const [puzzleId, setPuzzleId] = useState(null);
   const [imageSrc, setImageSrc] = useState(null);
   const [finalTime, setFinalTime] = useState(0);
+  const [userName, setUserName] = useState('');
+  const [scoreboard, setScoreboard] = useState([]);
   const fileInputRef = useRef(null);
 
-  // Brugeren vælger/tager et foto
+  // Tjek URL param '?pid=xxx'
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const pid = params.get('pid');
+    if (pid) {
+      loadPuzzle(pid);
+    }
+  }, []);
+
+  // Henter puzzle fra Supabase, sætter puzzleId + imageSrc => puzzle-step
+  async function loadPuzzle(pid) {
+    const { data: puzzle, error } = await supabase
+      .from('puzzles')
+      .select('*')
+      .eq('puzzle_id', pid)
+      .single();
+    
+    if (error) {
+      console.error("Could not load puzzle:", error);
+      return;
+    }
+    setPuzzleId(pid);
+    setImageSrc(puzzle.image_url);
+    setStep('puzzle');
+  }
+
+  // Bruger vælger billede => gem puzzle i Supabase => puzzleId
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
+
+    const newPuzzleId = crypto.randomUUID(); // ID
     const reader = new FileReader();
-    reader.onload = (evt) => {
-      setImageSrc(evt.target.result);
+    reader.onload = async (evt) => {
+      const dataUrl = evt.target.result;
+      setImageSrc(dataUrl);
+
+      // Gem puzzle
+      const { data, error } = await supabase
+        .from('puzzles')
+        .insert({
+          puzzle_id: newPuzzleId,
+          image_url: dataUrl,
+        })
+        .select();
+
+      if (error) {
+        console.error("Fejl ved indsættelse af puzzle:", error);
+        return;
+      }
+      setPuzzleId(newPuzzleId);
       setStep('puzzle');
     };
     reader.readAsDataURL(file);
   };
 
-  // Startskærm
+  // Start-skærm
   if (step === 'start') {
     return (
       <div style={styles.startContainer}>
         <button
           style={styles.takePhotoBtn}
-          onClick={() => fileInputRef.current && fileInputRef.current.click()}
+          onClick={() => fileInputRef.current?.click()}
         >
           Take photo
         </button>
@@ -46,31 +167,109 @@ function App() {
     return (
       <Puzzle
         imageUrl={imageSrc}
-        onPuzzleComplete={(seconds) => {
-          setFinalTime(seconds);
+        onPuzzleComplete={(timeUsed) => {
+          setFinalTime(timeUsed);
           setStep('done');
         }}
       />
     );
   }
 
-  // Slutskærm
+  // Slut-skærm => Indtast navn, gem score, vis scoreboard, del puzzle
   if (step === 'done') {
+    const puzzleLink = `${window.location.origin}/?pid=${puzzleId}`;
+
     return (
       <div style={styles.doneContainer}>
         <img src={imageSrc} alt="Puzzle" style={styles.doneImage} />
-        
-        {/* Tekst nede over knapperne, i lidt mindre font */}
-        <div style={styles.textOverlay}>
-          You used {finalTime} seconds!
-        </div>
+        <div style={styles.overlay}>
+          <p>You used {finalTime} seconds!</p>
+          
+          {/* Navn + Submit Score */}
+          {!scoreboard.length && (
+            <>
+              <input
+                placeholder="Your name"
+                style={styles.input}
+                value={userName}
+                onChange={(e) => setUserName(e.target.value)}
+              />
+              <button
+                style={styles.btn}
+                onClick={async () => {
+                  // Indsæt i "scores"
+                  const { data, error } = await supabase
+                    .from('scores')
+                    .insert({
+                      puzzle_id: puzzleId,
+                      user_name: userName || 'Anonymous',
+                      time_seconds: finalTime,
+                    })
+                    .select();
 
-        <div style={styles.btnRow}>
-          <button style={styles.endBtn} onClick={() => window.location.reload()}>
-            Take photo
-          </button>
-          <button style={styles.endBtn} onClick={handleShare}>
+                  if (error) {
+                    console.error("Fejl ved indsættelse af score:", error);
+                  } else {
+                    // Hent scoreboard
+                    const { data: scoreData, error: scoreErr } = await supabase
+                      .from('scores')
+                      .select('*')
+                      .eq('puzzle_id', puzzleId)
+                      .order('time_seconds', { ascending: true });
+                    
+                    if (scoreErr) {
+                      console.error("Fejl scoreboard:", scoreErr);
+                    } else {
+                      setScoreboard(scoreData);
+                    }
+                  }
+                }}
+              >
+                Submit score
+              </button>
+            </>
+          )}
+          
+          {/* Vis scoreboard hvis scoreboard.length > 0 */}
+          {scoreboard.length > 0 && (
+            <div style={{ textAlign: 'left', marginTop: '1rem' }}>
+              <h3>Scoreboard (lowest time first)</h3>
+              <ol>
+                {scoreboard.map((s) => (
+                  <li key={s.id}>
+                    {s.user_name} - {s.time_seconds}s
+                  </li>
+                ))}
+              </ol>
+            </div>
+          )}
+
+          {/* Del puzzle-link */}
+          <p style={{ marginTop: '1rem' }}>Share link:</p>
+          <p>{puzzleLink}</p>
+          <button
+            style={styles.btn}
+            onClick={() => {
+              if (navigator.share) {
+                navigator.share({
+                  title: 'Try my puzzle!',
+                  text: `I got ${finalTime} seconds! Beat me?`,
+                  url: puzzleLink,
+                })
+                .catch(err => console.error("Share failed:", err));
+              } else {
+                alert(`Copy link: ${puzzleLink}`);
+              }
+            }}
+          >
             Share puzzle
+          </button>
+
+          <button
+            style={styles.btn}
+            onClick={() => window.location.reload()}
+          >
+            Take new photo
           </button>
         </div>
       </div>
@@ -78,79 +277,6 @@ function App() {
   }
 
   return null;
-}
-
-// Puzzle-komponent (3x3)
-function Puzzle({ imageUrl, onPuzzleComplete }) {
-  const [pieces, setPieces] = useState([]);
-  const [firstSelected, setFirstSelected] = useState(null);
-  const [startTime] = useState(() => Date.now());
-
-  useEffect(() => {
-    const rows = 3;
-    const cols = 3;
-    const total = rows * cols;
-    const arr = Array.from({ length: total }, (_, i) => i);
-
-    shuffleArray(arr);
-
-    // Undgå "perfekt" puzzle fra start
-    let tries = 0;
-    while (arr.every((val, idx) => val === idx) && tries < 10) {
-      shuffleArray(arr);
-      tries++;
-    }
-
-    setPieces(arr);
-  }, []);
-
-  // Klik på en brik
-  const swapPieces = (index) => {
-    if (firstSelected === null) {
-      setFirstSelected(index);
-    } else {
-      const newPieces = [...pieces];
-      [newPieces[firstSelected], newPieces[index]] =
-        [newPieces[index], newPieces[firstSelected]];
-      setPieces(newPieces);
-      setFirstSelected(null);
-
-      // Tjek om puzzle er løst
-      if (newPieces.every((val, idx) => val === idx)) {
-        const endTime = Date.now();
-        const totalSeconds = Math.round((endTime - startTime) / 1000);
-        onPuzzleComplete && onPuzzleComplete(totalSeconds);
-      }
-    }
-  };
-
-  return (
-    <div style={styles.puzzleContainer}>
-      {pieces.map((val, idx) => {
-        const rows = 3;
-        const cols = 3;
-        const row = Math.floor(val / cols);
-        const col = val % cols;
-        return (
-          <div
-            key={idx}
-            onClick={() => swapPieces(idx)}
-            style={{
-              ...styles.piece,
-              backgroundImage: `url(${imageUrl})`,
-              backgroundSize: `${cols * 100}% ${rows * 100}%`,
-              backgroundPosition: `
-                ${(col * 100) / (cols - 1)}%
-                ${(row * 100) / (rows - 1)}%
-              `,
-            }}
-          >
-            {idx === firstSelected && <div style={styles.highlight} />}
-          </div>
-        );
-      })}
-    </div>
-  );
 }
 
 // Fisher-Yates shuffle
@@ -161,21 +287,8 @@ function shuffleArray(arr) {
   }
 }
 
-// Share-knap => Web Share API
-function handleShare() {
-  if (navigator.share) {
-    navigator.share({
-      title: 'Puzzle completed!',
-      text: 'I just completed the puzzle!',
-    });
-  } else {
-    alert('Sharing not supported in this browser.');
-  }
-}
-
-// Styles
+// CSS
 const styles = {
-  // Startskærm
   startContainer: {
     width: '100vw',
     height: '100vh',
@@ -191,15 +304,12 @@ const styles = {
     fontSize: '1.5rem',
     padding: '1rem 2rem',
     borderRadius: 8,
-    transition: 'background-color 0.2s, color 0.2s',
     cursor: 'pointer',
   },
-
-  // Puzzle-skærm
   puzzleContainer: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(3, 1fr)',
-    gridTemplateRows: 'repeat(3, 1fr)',
+    gridTemplateColumns: 'repeat(3,1fr)',
+    gridTemplateRows: 'repeat(3,1fr)',
     gap: '3px',
     width: '100vw',
     height: '100vh',
@@ -209,16 +319,14 @@ const styles = {
     backgroundRepeat: 'no-repeat',
     backgroundColor: '#222',
     border: '2px solid #ccc',
-    position: 'relative',
     cursor: 'pointer',
+    position: 'relative',
   },
   highlight: {
     position: 'absolute',
-    top: 0, left: 0, right: 0, bottom: 0,
+    inset: 0,
     border: '3px solid red',
   },
-
-  // Slutskærm
   doneContainer: {
     position: 'relative',
     width: '100vw',
@@ -230,32 +338,33 @@ const styles = {
     height: '100%',
     objectFit: 'cover',
   },
-  textOverlay: {
+  overlay: {
     position: 'absolute',
-    // Flyt teksten ned over knapperne
-    bottom: '5rem',
-    width: '100%',
-    textAlign: 'center',
-    fontSize: '1.5rem', // 15% mindre end 1.8 ~ 1.53
+    top: '10%',
+    left: '50%',
+    transform: 'translateX(-50%)',
+    background: 'rgba(0,0,0,0.6)',
     color: '#fff',
-    textShadow: '1px 1px 2px #000',
+    padding: '1rem 2rem',
+    textAlign: 'center',
+    borderRadius: 8,
+    maxWidth: '90%',
   },
-  btnRow: {
-    position: 'absolute',
-    bottom: '2rem',
-    width: '100%',
-    display: 'flex',
-    justifyContent: 'center',
-    gap: '1rem',
+  input: {
+    marginTop: '1rem',
+    padding: '0.5rem',
+    borderRadius: 4,
+    border: '1px solid #ccc',
   },
-  endBtn: {
+  btn: {
+    display: 'block',
+    margin: '1rem auto 0',
     backgroundColor: 'transparent',
     border: '2px solid lightblue',
     color: 'lightblue',
     fontSize: '1rem',
-    padding: '0.8rem 1.5rem',
+    padding: '0.5rem 1rem',
     borderRadius: 8,
-    transition: 'background-color 0.2s, color 0.2s',
     cursor: 'pointer',
   },
 };
