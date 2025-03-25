@@ -1,99 +1,62 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 
-function Puzzle({ imageUrl, rows = 3, cols = 3, aspectRatio = 1 }) {
+function Puzzle({ imageUrl, rows = 3, cols = 3 }) {
   const [pieces, setPieces] = useState([]);
   const [firstSelectedIndex, setFirstSelectedIndex] = useState(null);
-  const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
 
-  // Shuffle funktion
-  const shuffle = (array) => {
-    const arrCopy = [...array];
-    for (let i = arrCopy.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [arrCopy[i], arrCopy[j]] = [arrCopy[j], arrCopy[i]];
-    }
-    return arrCopy;
-  };
-
-  // Initialisér brikker
   useEffect(() => {
     const total = rows * cols;
-    const ordered = Array.from({ length: total }, (_, i) => i);
-    setPieces(shuffle(ordered));
+    const arr = Array.from({ length: total }, (_, i) => i);
+    // Shuffle
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    setPieces(arr);
   }, [rows, cols]);
 
-  // Lyt til skærmstørrelse og tilpas containeren
-  useEffect(() => {
-    const updateSize = () => {
-      const screenWidth = window.innerWidth;
-      const screenHeight = window.innerHeight;
-      const screenRatio = screenWidth / screenHeight;
-
-      let width, height;
-
-      if (screenRatio > aspectRatio) {
-        // Skærmen er bredere end billedet
-        height = screenHeight;
-        width = height * aspectRatio;
-      } else {
-        // Skærmen er højere end billedet
-        width = screenWidth;
-        height = width / aspectRatio;
-      }
-
-      setContainerSize({ width, height });
-    };
-
-    updateSize();
-    window.addEventListener('resize', updateSize);
-    return () => window.removeEventListener('resize', updateSize);
-  }, [aspectRatio]);
-
-  const isPuzzleSolved = useMemo(() => {
-    return pieces.every((val, index) => val === index);
-  }, [pieces]);
-
-  const handlePieceClick = (clickedIndex) => {
+  const handlePieceClick = (index) => {
     if (firstSelectedIndex === null) {
-      setFirstSelectedIndex(clickedIndex);
+      setFirstSelectedIndex(index);
     } else {
       const newPieces = [...pieces];
-      [newPieces[firstSelectedIndex], newPieces[clickedIndex]] =
-        [newPieces[clickedIndex], newPieces[firstSelectedIndex]];
+      [newPieces[firstSelectedIndex], newPieces[index]] =
+        [newPieces[index], newPieces[firstSelectedIndex]];
       setPieces(newPieces);
       setFirstSelectedIndex(null);
 
-      if (newPieces.every((val, index) => val === index)) {
+      // Check solved
+      if (newPieces.every((val, idx) => val === idx)) {
         alert('Tillykke! Du har samlet puzzlet!');
       }
     }
   };
 
   return (
-    <div
-      style={{
-        ...styles.puzzleContainer,
-        width: containerSize.width,
-        height: containerSize.height,
-      }}
-    >
+    <div style={styles.container}>
       {pieces.map((pieceValue, index) => {
         const pieceRow = Math.floor(pieceValue / cols);
         const pieceCol = pieceValue % cols;
 
+        // Laver en "dynamisk" position
+        const posX = (pieceCol / (cols - 1)) * 100; 
+        const posY = (pieceRow / (rows - 1)) * 100;
+
         return (
           <div
             key={index}
-            onClick={() => handlePieceClick(index)}
             style={{
               ...styles.piece,
               width: `${100 / cols}%`,
               backgroundImage: `url(${imageUrl})`,
-              backgroundSize: `${cols * 100}% ${rows * 100}%`,
-              backgroundPosition: `${(pieceCol * 100) / (cols - 1)}% ${(pieceRow * 100) / (rows - 1)}%`,
+              backgroundSize: 'cover',       // <-- "cover"
+              backgroundPosition: 'center',  // <-- center (vi bruger posX/posY i original puzzle, men "cover" overrides det delvist)
             }}
+            onClick={() => handlePieceClick(index)}
           >
-            {index === firstSelectedIndex && <div style={styles.highlight} />}
+            {index === firstSelectedIndex && (
+              <div style={styles.highlight} />
+            )}
           </div>
         );
       })}
@@ -102,25 +65,23 @@ function Puzzle({ imageUrl, rows = 3, cols = 3, aspectRatio = 1 }) {
 }
 
 const styles = {
-  puzzleContainer: {
+  container: {
+    height: '100vh',
+    width: '100vw',
     display: 'flex',
     flexWrap: 'wrap',
-    margin: '0 auto',
+    margin: 0,
     border: '2px solid #000',
-    position: 'relative',
     background: '#000',
-    touchAction: 'none',
-    overflow: 'hidden',
+    position: 'relative'
   },
   piece: {
     aspectRatio: '1',
     boxSizing: 'border-box',
     border: '1px solid #555',
-    backgroundRepeat: 'no-repeat',
-    backgroundPosition: 'center',
-    backgroundSize: 'cover',
     cursor: 'pointer',
     position: 'relative',
+    backgroundRepeat: 'no-repeat',
   },
   highlight: {
     position: 'absolute',

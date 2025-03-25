@@ -13,19 +13,15 @@ function App() {
       imageUrl,
       rows: isPortrait ? 5 : 3,
       cols: isPortrait ? 3 : 5,
-      aspectRatio: width / height,
-      canvasWidth: width,
-      canvasHeight: height,
+      aspectRatio: width / height
     });
   };
 
   if (!puzzleSettings) {
-    // Ingen billede endnu – vis upload-knap
     return <ImageUpload onImageSelected={handleImageSelected} />;
   }
 
   if (!hasStarted) {
-    // Vis fullscreen preview med baggrundsbillede
     return (
       <div style={styles.previewContainer(puzzleSettings.imageUrl)}>
         <button style={styles.startButton} onClick={() => setHasStarted(true)}>
@@ -35,25 +31,21 @@ function App() {
     );
   }
 
-  // Nu har brugeren klikket "Start Puzzle" – vis selve puzzlet
   return (
     <Puzzle
       imageUrl={puzzleSettings.imageUrl}
       rows={puzzleSettings.rows}
       cols={puzzleSettings.cols}
-      aspectRatio={puzzleSettings.aspectRatio}
     />
   );
 }
 
-// Her bruger vi en funktion, der tager en URL og returnerer et style-objekt.
-// Baggrundsbilledet = det roterede canvas-billede fra ImageUpload.
 const styles = {
   previewContainer: (url) => ({
     height: '100vh',
     width: '100vw',
     backgroundImage: `url(${url})`,
-    backgroundSize: 'cover',
+    backgroundSize: 'cover',            // <-- "cover"
     backgroundPosition: 'center',
     backgroundRepeat: 'no-repeat',
     display: 'flex',
