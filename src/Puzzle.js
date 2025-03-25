@@ -4,14 +4,6 @@ const rows = 3;
 const cols = 3;
 
 function Puzzle() {
-  const generateInitialPieces = () => {
-    const array = Array.from({ length: rows * cols }, (_, i) => i);
-    return shuffle(array);
-  };
-
-  const [pieces, setPieces] = useState(generateInitialPieces);
-  const [firstSelectedIndex, setFirstSelectedIndex] = useState(null);
-
   const shuffle = (array) => {
     const arrCopy = [...array];
     for (let i = arrCopy.length - 1; i > 0; i--) {
@@ -20,6 +12,14 @@ function Puzzle() {
     }
     return arrCopy;
   };
+
+  const generateInitialPieces = () => {
+    const array = Array.from({ length: rows * cols }, (_, i) => i);
+    return shuffle(array);
+  };
+
+  const [pieces, setPieces] = useState(generateInitialPieces);
+  const [firstSelectedIndex, setFirstSelectedIndex] = useState(null);
 
   const isPuzzleSolved = (arr) => {
     return arr.every((val, index) => val === index);
@@ -30,9 +30,7 @@ function Puzzle() {
       setFirstSelectedIndex(clickedIndex);
     } else {
       const newPieces = [...pieces];
-      [newPieces[firstSelectedIndex], newPieces[clickedIndex]] =
-        [newPieces[clickedIndex], newPieces[firstSelectedIndex]];
-
+      [newPieces[firstSelectedIndex], newPieces[clickedIndex]] = [newPieces[clickedIndex], newPieces[firstSelectedIndex]];
       setPieces(newPieces);
       setFirstSelectedIndex(null);
 
@@ -57,9 +55,7 @@ function Puzzle() {
               backgroundPosition: `-${pieceCol * 100}px -${pieceRow * 100}px`,
             }}
           >
-            {index === firstSelectedIndex && (
-              <div style={styles.highlight} />
-            )}
+            {index === firstSelectedIndex && <div style={styles.highlight} />}
           </div>
         );
       })}
