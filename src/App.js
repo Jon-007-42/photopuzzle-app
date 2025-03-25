@@ -4,6 +4,7 @@ import ImageUpload from './ImageUpload';
 
 function App() {
   const [puzzleSettings, setPuzzleSettings] = useState(null);
+  const [hasStarted, setHasStarted] = useState(false);
 
   const handleImageSelected = (imageUrl, width, height) => {
     const isPortrait = height >= width;
@@ -16,20 +17,63 @@ function App() {
     });
   };
 
-  return (
-    <div style={{ height: '100vh', width: '100vw', overflow: 'hidden' }}>
-      {!puzzleSettings ? (
-        <ImageUpload onImageSelected={handleImageSelected} />
-      ) : (
-        <Puzzle
-          imageUrl={puzzleSettings.imageUrl}
-          rows={puzzleSettings.rows}
-          cols={puzzleSettings.cols}
-          aspectRatio={puzzleSettings.aspectRatio}
+  if (!puzzleSettings) {
+    return <ImageUpload onImageSelected={handleImageSelected} />;
+  }
+
+  if (!hasStarted) {
+    return (
+      <div style={styles.previewContainer}>
+        <img
+          src={puzzleSettings.imageUrl}
+          alt="preview"
+          style={styles.previewImage}
         />
-      )}
-    </div>
+        <button style={styles.startButton} onClick={() => setHasStarted(true)}>
+          Start Puzzle
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <Puzzle
+      imageUrl={puzzleSettings.imageUrl}
+      rows={puzzleSettings.rows}
+      cols={puzzleSettings.cols}
+      aspectRatio={puzzleSettings.aspectRatio}
+    />
   );
 }
+
+const styles = {
+  previewContainer: {
+    height: '100svh',
+    width: '100svw',
+    backgroundColor: '#000',
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  previewImage: {
+    maxWidth: '100%',
+    maxHeight: '100%',
+    objectFit: 'contain',
+  },
+  startButton: {
+    position: 'absolute',
+    bottom: '2rem',
+    padding: '1rem 2rem',
+    fontSize: '1.2rem',
+    backgroundColor: '#fff',
+    color: '#000',
+    border: 'none',
+    borderRadius: '10px',
+    cursor: 'pointer',
+  },
+};
 
 export default App;
