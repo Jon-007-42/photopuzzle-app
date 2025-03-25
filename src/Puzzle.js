@@ -30,7 +30,8 @@ function Puzzle() {
       setFirstSelectedIndex(clickedIndex);
     } else {
       const newPieces = [...pieces];
-      [newPieces[firstSelectedIndex], newPieces[clickedIndex]] = [newPieces[clickedIndex], newPieces[firstSelectedIndex]];
+      [newPieces[firstSelectedIndex], newPieces[clickedIndex]] =
+        [newPieces[clickedIndex], newPieces[firstSelectedIndex]];
       setPieces(newPieces);
       setFirstSelectedIndex(null);
 
@@ -52,7 +53,8 @@ function Puzzle() {
             onClick={() => handlePieceClick(index)}
             style={{
               ...styles.piece,
-              backgroundPosition: `${(pieceCol * 100) / 2}% ${(pieceRow * 100) / 2}%`,
+              width: `${100 / cols}%`,
+              backgroundPosition: `${(pieceCol * 100) / (cols - 1)}% ${(pieceRow * 100) / (rows - 1)}%`,
             }}
           >
             {index === firstSelectedIndex && <div style={styles.highlight} />}
@@ -65,26 +67,25 @@ function Puzzle() {
 
 const styles = {
   puzzleContainer: {
-  width: '90vw',
-  maxWidth: '400px',
-  aspectRatio: '1',
-  margin: '0 auto',
-  display: 'flex',
-  flexWrap: 'wrap',
-  border: '2px solid #ccc',
-  position: 'relative',
-},
+    width: '90vw',
+    height: '90vw',
+    maxWidth: '90vh',
+    maxHeight: '90vh',
+    margin: '0 auto',
+    display: 'flex',
+    flexWrap: 'wrap',
+    border: '2px solid #ccc',
+    position: 'relative',
+  },
   piece: {
-  width: `${100 / 3}%`, // 3 brikker pr. række = 33.333%
-  aspectRatio: '1',
-  boxSizing: 'border-box',
-  border: '1px solid #999',
-  backgroundImage: 'url("/sample.jpg")',
-  backgroundSize: '100% 100%',
-  cursor: 'pointer',
-  position: 'relative',
-}
-,
+    aspectRatio: '1',
+    boxSizing: 'border-box',
+    border: '1px solid #999',
+    backgroundImage: 'url("/sample.jpg")',
+    backgroundSize: `${cols * 100}% ${rows * 100}%`,
+    cursor: 'pointer',
+    position: 'relative',
+  },
   highlight: {
     position: 'absolute',
     top: 0,
