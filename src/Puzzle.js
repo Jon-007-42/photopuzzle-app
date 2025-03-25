@@ -52,7 +52,7 @@ function Puzzle() {
             onClick={() => handlePieceClick(index)}
             style={{
               ...styles.piece,
-              backgroundPosition: `-${pieceCol * 100}px -${pieceRow * 100}px`,
+              backgroundPosition: `${(pieceCol * 100) / 2}% ${(pieceRow * 100) / 2}%`,
             }}
           >
             {index === firstSelectedIndex && <div style={styles.highlight} />}
@@ -65,24 +65,26 @@ function Puzzle() {
 
 const styles = {
   puzzleContainer: {
-    width: '300px',
-    height: '300px',
-    margin: '0 auto',
-    display: 'flex',
-    flexWrap: 'wrap',
-    border: '2px solid #ccc',
-    position: 'relative',
-  },
+  width: '90vw',
+  maxWidth: '400px',
+  aspectRatio: '1',
+  margin: '0 auto',
+  display: 'flex',
+  flexWrap: 'wrap',
+  border: '2px solid #ccc',
+  position: 'relative',
+},
   piece: {
-    width: '100px',
-    height: '100px',
-    boxSizing: 'border-box',
-    border: '1px solid #999',
-    backgroundImage: 'url("/sample.jpg")',
-    backgroundSize: '300px 300px',
-    cursor: 'pointer',
-    position: 'relative',
-  },
+  width: `${100 / 3}%`, // 3 brikker pr. række = 33.333%
+  aspectRatio: '1',
+  boxSizing: 'border-box',
+  border: '1px solid #999',
+  backgroundImage: 'url("/sample.jpg")',
+  backgroundSize: '100% 100%',
+  cursor: 'pointer',
+  position: 'relative',
+}
+,
   highlight: {
     position: 'absolute',
     top: 0,
