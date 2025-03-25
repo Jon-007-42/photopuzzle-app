@@ -4,81 +4,71 @@ import CropView from './CropView';
 import Puzzle from './Puzzle';
 
 function App() {
-  const [rotatedData, setRotatedData] = useState(null);   // Billedet fixet for EXIF
-  const [croppedData, setCroppedData] = useState(null);   // Billedet beskåret
-  const [hasStarted, setHasStarted] = useState(false);
+  const [step, setStep] = useState('upload'); // 'upload' -> 'crop' -> 'preview' -> 'puzzle'
+  const [imageData, setImageData] = useState(null);
+  const [cropData, setCropData] = useState(null);
 
-  // 1) Kaldes når ImageUpload er færdig
-  const handleImageSelected = (imageUrl, width, height) => {
-    // gem i rotatedData, mens vi venter på crop
-    setRotatedData({ imageUrl, width, height });
+  // 1) Efter EXIF-rotation
+  const handleImageSelected = (url, w, h) => {
+    setImageData({ url, w, h });
+    setStep('crop');
   };
 
-  // 2) Kaldes når CropView er færdig
+  // 2) Efter rotation + beskæring
   const handleCropDone = (croppedUrl, cw, ch) => {
-    // gem i croppedData
-    setCroppedData({ imageUrl: croppedUrl, width: cw, height: ch });
+    setCropData({ url: croppedUrl, w: cw, h: ch });
+    setStep('preview');
   };
 
-  // => Flow
-  // hvis ingen rotatedData => upload
-  if (!rotatedData) {
+  if (step === 'upload') {
     return <ImageUpload onImageSelected={handleImageSelected} />;
   }
-
-  // hvis der er rotatedData, men ingen croppedData => CropView
-  if (!croppedData) {
-    return (
-      <CropView
-        imageUrl={rotatedData.imageUrl}
-        onComplete={handleCropDone}
-      />
-    );
+  if (step === 'crop') {
+    return <CropView imageUrl={imageData.url} onComplete={handleCropDone} />;
   }
-
-  // hvis puzzle ikke er startet, vis en preview / “Start Puzzle” knap
-  if (!hasStarted) {
+  if (step === 'preview') {
     return (
-      <div style={styles.previewContainer(croppedData.imageUrl)}>
-        <button style={styles.startButton} onClick={() => setHasStarted(true)}>
+      <div style={styles.preview(cropData.url)}>
+        <button
+          onClick={() => setStep('puzzle')}
+          style={styles.startBtn}
+        >
           Start Puzzle
         </button>
       </div>
     );
   }
-
-  // ellers -> Puzzle
-  return (
-    <Puzzle
-      imageUrl={croppedData.imageUrl}
-      rows={3}
-      cols={3}
-      // her sætter du fx 3x3, eller ud fra croppedData aspect
-    />
-  );
+  if (step === 'puzzle') {
+    return (
+      <Puzzle
+        imageUrl={cropData.url}
+        rows={3}
+        cols={3}
+      />
+    );
+  }
+  return null;
 }
 
 const styles = {
-  previewContainer: (url) => ({
-    height: '100vh',
+  preview: (url) => ({
     width: '100vw',
-    background: '#000',
+    height: '100vh',
     backgroundImage: `url(${url})`,
     backgroundSize: 'cover',
     backgroundPosition: 'center',
-    backgroundRepeat: 'no-repeat',
     display: 'flex',
-    justifyContent: 'center',
     alignItems: 'flex-end',
+    justifyContent: 'center',
   }),
-  startButton: {
+  startBtn: {
     marginBottom: '2rem',
     padding: '1rem 2rem',
-    fontSize: '1.2rem',
-    backgroundColor: '#fff',
+    background: '#fff',
     color: '#000',
+    fontSize: '1.2rem',
     border: 'none',
-    borderRadius: '10px',
+    borderRadius: '8px',
     cursor: 'pointer',
   },
 };
