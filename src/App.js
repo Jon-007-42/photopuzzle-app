@@ -1,14 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import ReactDOM from 'react-dom/client';
 
+// App-komponenten
 function App() {
-  // 'camera' => vis input til at tage foto
-  // 'puzzle' => vis puzzle
-  // 'done'   => puzzle løst -> vis originalbillede
   const [step, setStep] = useState('camera');
   const [imageSrc, setImageSrc] = useState(null);
 
-  // Kaldes, når brugeren har taget et foto
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -16,12 +12,11 @@ function App() {
     const reader = new FileReader();
     reader.onload = (evt) => {
       setImageSrc(evt.target.result);
-      setStep('puzzle');  // gå direkte til puzzle
+      setStep('puzzle');
     };
     reader.readAsDataURL(file);
   };
 
-  // Hvis vi stadig venter på et billede:
   if (step === 'camera') {
     return (
       <div style={styles.center}>
@@ -37,7 +32,6 @@ function App() {
     );
   }
 
-  // Puzzle-trin
   if (step === 'puzzle') {
     return (
       <Puzzle
@@ -49,7 +43,6 @@ function App() {
     );
   }
 
-  // Hvis puzzle er løst
   if (step === 'done') {
     return (
       <div style={styles.doneContainer}>
@@ -62,15 +55,14 @@ function App() {
     );
   }
 
-  return null; 
+  return null;
 }
 
-// Puzzle-komponenten
+// Puzzle-komponent
 function Puzzle({ imageUrl, rows = 3, cols = 3, onPuzzleComplete }) {
   const [pieces, setPieces] = useState([]);
   const [firstSelected, setFirstSelected] = useState(null);
 
-  // Bland brikkerne, når komponenten vises
   useEffect(() => {
     const total = rows * cols;
     const arr = Array.from({ length: total }, (_, i) => i);
@@ -83,7 +75,6 @@ function Puzzle({ imageUrl, rows = 3, cols = 3, onPuzzleComplete }) {
     setPieces(arr);
   }, [rows, cols]);
 
-  // Bytter to brikker
   const swapPieces = (index) => {
     if (firstSelected === null) {
       setFirstSelected(index);
@@ -130,7 +121,7 @@ function Puzzle({ imageUrl, rows = 3, cols = 3, onPuzzleComplete }) {
   );
 }
 
-// Lidt simple styles
+// CSS-styles
 const styles = {
   center: {
     width: '100vw',
@@ -185,5 +176,5 @@ const styles = {
   },
 };
 
-const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(<App />);
+// VIGTIGT: Default export
+export default App;
