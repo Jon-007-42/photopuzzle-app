@@ -3,9 +3,9 @@ import Puzzle from './Puzzle';
 
 function App() {
   return (
-    <div style={{ textAlign: 'center' }}>
+    <div style={{ padding: '1rem', textAlign: 'center' }}>
       <h1>PhotoPuzzle</h1>
-      <p>Prøv at klikke på to brikker for at bytte dem!</p>
+      <p>Klik på to brikker for at bytte dem og samle billedet.</p>
       <Puzzle />
     </div>
   );
