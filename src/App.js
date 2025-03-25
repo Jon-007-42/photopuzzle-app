@@ -1,14 +1,80 @@
 import React, { useState, useEffect } from 'react';
 
-// App-komponenten
+// Puzzle-komponent
+function Puzzle({ imageUrl, rows = 3, cols = 3, onPuzzleComplete }) {
+  const [pieces, setPieces] = useState([]);
+  const [firstSelected, setFirstSelected] = useState(null);
+
+  // Bland brikker ved mount
+  useEffect(() => {
+    const total = rows * cols;
+    const arr = Array.from({ length: total }, (_, i) => i);
+
+    // Fisher-Yates shuffle
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    setPieces(arr);
+  }, [rows, cols]);
+
+  // Byt to brikker
+  const swapPieces = (index) => {
+    if (firstSelected === null) {
+      setFirstSelected(index);
+    } else {
+      const newPieces = [...pieces];
+      [newPieces[firstSelected], newPieces[index]] =
+        [newPieces[index], newPieces[firstSelected]];
+      setPieces(newPieces);
+      setFirstSelected(null);
+
+      // Tjek om puzzle er løst
+      if (newPieces.every((val, idx) => val === idx)) {
+        onPuzzleComplete && onPuzzleComplete();
+      }
+    }
+  };
+
+  return (
+    <div style={styles.puzzleContainer}>
+      {pieces.map((val, idx) => {
+        const row = Math.floor(val / cols);
+        const col = val % cols;
+
+        return (
+          <div
+            key={idx}
+            onClick={() => swapPieces(idx)}
+            style={{
+              ...styles.piece,
+              width: `${100 / cols}%`,
+              backgroundImage: `url(${imageUrl})`,
+              backgroundSize: `${cols * 100}% ${rows * 100}%`,
+              backgroundPosition: `
+                ${(col * 100) / (cols - 1)}%
+                ${(row * 100) / (rows - 1)}%
+              `,
+            }}
+          >
+            {idx === firstSelected && <div style={styles.highlight} />}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// Hovedkomponent: App
 function App() {
+  // step: 'camera' -> 'puzzle' -> 'done'
   const [step, setStep] = useState('camera');
   const [imageSrc, setImageSrc] = useState(null);
 
+  // Håndter filvalg fra kamera
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-
     const reader = new FileReader();
     reader.onload = (evt) => {
       setImageSrc(evt.target.result);
@@ -58,70 +124,7 @@ function App() {
   return null;
 }
 
-// Puzzle-komponent
-function Puzzle({ imageUrl, rows = 3, cols = 3, onPuzzleComplete }) {
-  const [pieces, setPieces] = useState([]);
-  const [firstSelected, setFirstSelected] = useState(null);
-
-  useEffect(() => {
-    const total = rows * cols;
-    const arr = Array.from({ length: total }, (_, i) => i);
-
-    // Fisher-Yates shuffle
-    for (let i = arr.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [arr[i], arr[j]] = [arr[j], arr[i]];
-    }
-    setPieces(arr);
-  }, [rows, cols]);
-
-  const swapPieces = (index) => {
-    if (firstSelected === null) {
-      setFirstSelected(index);
-    } else {
-      const newPieces = [...pieces];
-      [newPieces[firstSelected], newPieces[index]] =
-        [newPieces[index], newPieces[firstSelected]];
-      setPieces(newPieces);
-      setFirstSelected(null);
-
-      // Tjek om puzzle er løst
-      if (newPieces.every((val, idx) => val === idx)) {
-        onPuzzleComplete && onPuzzleComplete();
-      }
-    }
-  };
-
-  return (
-    <div style={styles.puzzleContainer}>
-      {pieces.map((val, idx) => {
-        const row = Math.floor(val / cols);
-        const col = val % cols;
-
-        return (
-          <div
-            key={idx}
-            onClick={() => swapPieces(idx)}
-            style={{
-              ...styles.piece,
-              width: `${100 / cols}%`,
-              backgroundImage: `url(${imageUrl})`,
-              backgroundSize: `${cols * 100}% ${rows * 100}%`,
-              backgroundPosition: `
-                ${(col * 100) / (cols - 1)}%
-                ${(row * 100) / (rows - 1)}%
-              `,
-            }}
-          >
-            {idx === firstSelected && <div style={styles.highlight} />}
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-// CSS-styles
+// Lidt simple styles
 const styles = {
   center: {
     width: '100vw',
@@ -176,5 +179,4 @@ const styles = {
   },
 };
 
-// VIGTIGT: Default export
 export default App;
